@@ -2,6 +2,7 @@ export interface ImageData {
   width: number;
   height: number;
   data: Uint8ClampedArray;
+  colorSpace: 'srgb' | 'display-p3';
 }
 
 export interface ColorAnalysisResult {
@@ -23,41 +24,38 @@ export interface VectorizationResult {
 }
 
 export interface ProcessingResult {
-  layers: {
-    color: string;
-    paths: string[];
-  }[];
-  gradients: {
-    id: string;
-    type: 'linear' | 'radial';
-    stops: {
-      offset: number;
-      color: string;
-    }[];
-  }[];
+  layers: ColorLayer[];
+  gradients: Gradient[];
   metadata: {
-    processingTime: number;
-    originalSize: {
-      width: number;
-      height: number;
-    };
-    outputSize: {
-      width: number;
-      height: number;
-    };
+    width: number;
+    height: number;
+    colorPrecision: number;
+    pathPrecision: number;
+    lineThreshold: number;
+    pathSmoothing: 'high' | 'balanced' | 'minimal';
+    gradientOptimization: boolean;
   };
 }
 
 export interface ImageProcessingOptions {
-  colorPrecision: number;
-  pathPrecision: number;
-  lineThreshold: number;
-  pathSmoothing: 'high' | 'balanced' | 'minimal';
-  gradientOptimization: boolean;
+  colorPrecision?: number;
+  pathPrecision?: number;
+  lineThreshold?: number;
+  pathSmoothing?: 'high' | 'balanced' | 'minimal';
+  gradientOptimization?: boolean;
 }
 
 export interface ColorLayer {
   color: string;
-  mask: ImageData;
   paths: string[];
+  mask?: ImageData;
+}
+
+export interface Gradient {
+  type: 'linear' | 'radial';
+  colors: Array<{
+    color: string;
+    offset: number;
+  }>;
+  id: string;
 } 

@@ -100,13 +100,13 @@ export default function App() {
       
       const rawResult = await processImage(imageData, options)
       
-      const allPaths = rawResult.layers.map(layer => layer.path)
+      const allPaths = rawResult.layers.flatMap(layer => layer.paths)
       const pathErrors = validateSVGPaths(allPaths)
       
       if (pathErrors.length > 0) {
         const fixedLayers = rawResult.layers.map(layer => ({
           ...layer,
-          path: fixSVGPath(layer.path)
+          paths: layer.paths.map(path => fixSVGPath(path))
         }))
         rawResult.layers = fixedLayers
       }
@@ -137,17 +137,17 @@ export default function App() {
 
     const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="${result.metadata.width}" height="${result.metadata.height}" viewBox="0 0 ${result.metadata.width} ${result.metadata.height}" xmlns="http://www.w3.org/2000/svg">
-  ${result.gradients.map((gradient: any) => `
+  ${result.gradients.map((gradient) => `
     <defs>
       <${gradient.type}Gradient id="${gradient.id}">
-        ${gradient.stops.map((stop: any) => `
+        ${gradient.colors.map((stop) => `
           <stop offset="${stop.offset * 100}%" stop-color="${stop.color}" />
         `).join('')}
       </${gradient.type}Gradient>
     </defs>
   `).join('')}
-  ${result.layers.map((layer: any) => `
-    <path d="${layer.path}" fill="${layer.color}" />
+  ${result.layers.map((layer) => `
+    <path d="${layer.paths.join(' ')}" fill="${layer.color}" />
   `).join('')}
 </svg>`
 

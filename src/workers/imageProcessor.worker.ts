@@ -1,58 +1,54 @@
-import { expose } from 'comlink'
-import * as potrace from 'potrace'
-import { ImageData, ProcessingResult, ImageProcessingOptions } from '../types/imageProcessing'
+import { ImageProcessingOptions, ProcessingResult } from '../types/imageProcessing'
+import potrace from 'potrace'
 
-const worker = {
-  async processImage(imageData: ImageData, options: Partial<ImageProcessingOptions> = {}): Promise<ProcessingResult> {
-    const startTime = performance.now()
+self.onmessage = async (e: MessageEvent) => {
+  const { imageData, options } = e.data
 
-    // 配置处理选项
+  try {
     const {
       colorPrecision = 8,
       pathPrecision = 2,
       lineThreshold = 0.1,
       pathSmoothing = 'balanced',
       gradientOptimization = true
-    } = options
+    } = options as ImageProcessingOptions
 
-    // 执行图像处理
-    const result = await new Promise<ProcessingResult>((resolve, reject) => {
-      potrace.trace(imageData, {
-        turdSize: 2,
-        turnPolicy: 'minority',
-        alphaMax: 1,
-        optCurve: true,
-        threshold: lineThreshold,
-        blackOnWhite: false
-      }, (err: Error | null, svg: string) => {
-        if (err) {
-          reject(err)
-          return
-        }
+    // 使用传入的参数进行图像处理
+    const result: ProcessingResult = {
+      layers: [],
+      gradients: [],
+      metadata: {
+        width: imageData.width,
+        height: imageData.height,
+        colorPrecision,
+        pathPrecision,
+        lineThreshold,
+        pathSmoothing,
+        gradientOptimization
+      }
+    }
 
-        resolve({
-          layers: [{
-            color: '#000000',
-            paths: [svg]
-          }],
-          gradients: [],
-          metadata: {
-            processingTime: performance.now() - startTime,
-            originalSize: {
-              width: imageData.width,
-              height: imageData.height
-            },
-            outputSize: {
-              width: imageData.width,
-              height: imageData.height
-            }
-          }
-        })
-      })
+    // 处理图像并生成结果
+    const traceResult = await potrace(imageData, {
+      turdSize: 2,
+      turnPolicy: 'minority',
+      alphaMax: 1,
+      optCurve: true,
+      threshold: lineThreshold,
+      blackOnWhite: false
     })
 
-    return result
-  }
-}
+    result.layers.push({
+      color: '#000000',
+      paths: [traceResult.path]
+    })
 
-expose(worker) 
+    self.postMessage({ success: true, result })
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      self.postMessage({ success: false, error: error.message })
+    } else {
+      self.postMessage({ success: false, error: 'An unknown error occurred' })
+    }
+  }
+} 

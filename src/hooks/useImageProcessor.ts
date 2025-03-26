@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { ProcessingResult, ImageProcessingOptions } from '../types'
+import { ProcessingResult, ImageProcessingOptions } from '../types/imageProcessing'
 
 interface Pixel {
   x: number;
@@ -197,7 +197,7 @@ function pointToLineDistance(point: Pixel, lineStart: Pixel, lineEnd: Pixel): nu
 function pointsToSVGPath(points: Pixel[]): string {
   if (points.length < 2) return '';
   
-  const parts = [];
+  const parts: string[] = [];
   parts.push(`M ${points[0].x} ${points[0].y}`);
   
   for (let i = 1; i < points.length; i++) {
@@ -225,7 +225,12 @@ export const useImageProcessor = () => {
       const { width, height, data } = imageData
       
       // 创建颜色映射，使用改进的颜色量化算法
-      const colorPrecision = options.colorPrecision
+      const colorPrecision = options.colorPrecision || 8
+      const pathPrecision = options.pathPrecision || 2
+      const lineThreshold = options.lineThreshold || 0.1
+      const pathSmoothing = options.pathSmoothing || 'balanced'
+      const gradientOptimization = options.gradientOptimization || true
+      
       const colorMapping = new Map<string, ColorData>()
       
       // 第一阶段：收集原始颜色数据
@@ -276,7 +281,7 @@ export const useImageProcessor = () => {
       }
       
       // 处理每个颜色层
-      const layers = []
+      const layers: Array<{color: string; paths: string[]}> = [];
       
       for (const [_, colorData] of colorMapping.entries()) {
         const { color, pixels } = colorData
@@ -289,7 +294,7 @@ export const useImageProcessor = () => {
         
         // 使用优化的边缘检测算法
         const edges = getOptimizedEdges(bitmap, width, height)
-        const paths = []
+        const paths: string[] = []
         
         // 标记已访问的边缘点
         const visited = Array(height).fill(0).map(() => Array(width).fill(false))
@@ -311,7 +316,7 @@ export const useImageProcessor = () => {
                 const arrangedContour = arrangeContourPoints(contour)
                 
                 // 根据路径精度进行简化
-                const tolerance = 6 - options.pathPrecision // 转换为合适的简化阈值
+                const tolerance = 6 - (pathPrecision || 2) // 转换为合适的简化阈值
                 const simplifiedContour = simplifyPath(arrangedContour, tolerance)
                 
                 // 生成SVG路径
@@ -325,7 +330,7 @@ export const useImageProcessor = () => {
         if (paths.length > 0) {
           layers.push({
             color,
-            path: paths.join(' ')
+            paths
           })
         }
       }
@@ -336,7 +341,11 @@ export const useImageProcessor = () => {
         metadata: {
           width,
           height,
-          colorCount: colorMapping.size
+          colorPrecision,
+          pathPrecision,
+          lineThreshold,
+          pathSmoothing,
+          gradientOptimization
         }
       }
     } catch (err) {

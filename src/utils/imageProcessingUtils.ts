@@ -352,7 +352,7 @@ export function analyzeImage(imageData: ImageData): {
 /**
  * 应用颜色后处理，改善相邻颜色区域的过渡
  */
-export function postProcessColorLayers(layers: Array<{ color: string, path: string }>): Array<{ color: string, path: string }> {
+export function postProcessColorLayers(layers: Array<{ color: string, paths: string[] }>): Array<{ color: string, paths: string[] }> {
   // 将RGB颜色字符串转换为数组
   const parseRGB = (rgb: string): [number, number, number] => {
     const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -377,7 +377,7 @@ export function postProcessColorLayers(layers: Array<{ color: string, path: stri
   };
   
   // 按颜色相似度分组
-  const groupedLayers: Array<Array<{ color: string, path: string }>> = [];
+  const groupedLayers: Array<Array<{ color: string, paths: string[] }>> = [];
   
   for (const layer of layers) {
     let addedToGroup = false;
@@ -398,17 +398,17 @@ export function postProcessColorLayers(layers: Array<{ color: string, path: stri
   }
   
   // 处理每组：相似颜色层合并
-  const processedLayers: Array<{ color: string, path: string }> = [];
+  const processedLayers: Array<{ color: string, paths: string[] }> = [];
   
   for (const group of groupedLayers) {
     if (group.length === 1) {
       processedLayers.push(group[0]);
     } else {
       // 对于相似颜色组，使用第一个颜色，合并所有路径
-      const combinedPath = group.map(layer => layer.path).join(' ');
+      const combinedPaths = group.map(layer => layer.paths).join(' ');
       processedLayers.push({
         color: group[0].color,
-        path: combinedPath
+        paths: combinedPaths.split(' ')
       });
     }
   }

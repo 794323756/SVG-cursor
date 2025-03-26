@@ -1,42 +1,65 @@
 import { expose } from 'comlink'
-import { trace } from '@vectormage/image-tracer'
-import { ImageData, ImageProcessingOptions, ColorLayer, VectorizationResult } from '../types/imageProcessing'
+import { ImageProcessingOptions, ColorLayer, VectorizationResult } from '../types/imageProcessing'
+import potraceLib from 'potrace'
 
+// 仅保留一个 worker 对象，使用 potrace 库
 const worker = {
   async vectorizeLayer(layer: ColorLayer, options: Partial<ImageProcessingOptions> = {}): Promise<VectorizationResult> {
     const {
-      pathPrecision = 2,
       lineThreshold = 0.1,
-      pathSmoothing = 'balanced'
     } = options;
 
-    // 配置追踪选项
+    if (!layer.mask) {
+      throw new Error('Layer mask is required for vectorization');
+    }
+
+    // 确保 mask 存在后再使用
+    const mask = layer.mask;
+
+    // 使用 potrace 库处理图像
     const traceOptions = {
-      ltres: lineThreshold,
-      qtres: pathPrecision,
-      pathomit: 8,
-      colorsampling: 0,
-      numberofcolors: 2,
-      mincolorratio: 0,
-      colorquantcycles: 3,
-      layering: 0,
-      strokewidth: 1,
-      linefilter: true,
-      curvefitting: pathSmoothing === 'high',
-      csp: pathSmoothing === 'minimal' ? 0 : 2
+      turdSize: 2,
+      turnPolicy: 'minority' as const,
+      alphaMax: 1,
+      optCurve: true,
+      threshold: lineThreshold,
+      blackOnWhite: false
     };
 
-    // 执行矢量追踪
-    const result = await trace(layer.mask, traceOptions);
+    // 使用 Promise 封装 potrace 回调函数
+    const result = await new Promise<{path: string; width: number; height: number}>((resolve, reject) => {
+      potraceLib(mask, traceOptions, (err: Error | null, res: any) => {
+        if (err) reject(err);
+        else if (res) resolve(res);
+        else reject(new Error('Failed to trace image'));
+      });
+    });
 
     return {
-      paths: result.layers[0].paths,
+      paths: [result.path],
       metadata: {
-        complexity: result.metadata.processingTime,
-        pathCount: result.layers[0].paths.length,
-        totalLength: result.layers[0].paths.reduce((acc, path) => acc + path.length, 0)
+        complexity: 1,
+        pathCount: 1,
+        totalLength: result.path.length
       }
     };
+  }
+};
+
+// 处理消息事件
+self.onmessage = async (e: MessageEvent) => {
+  const { layer, options } = e.data as { layer: ColorLayer; options: ImageProcessingOptions };
+
+  try {
+    // 使用 worker 对象中的方法处理图像
+    const vectorizationResult = await worker.vectorizeLayer(layer, options);
+    self.postMessage({ success: true, result: vectorizationResult });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      self.postMessage({ success: false, error: error.message });
+    } else {
+      self.postMessage({ success: false, error: 'An unknown error occurred' });
+    }
   }
 };
 
