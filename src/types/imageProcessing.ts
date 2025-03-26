@@ -46,4 +46,18 @@ export interface ProcessingResult {
       height: number;
     };
   };
+}
+
+export interface ImageProcessingOptions {
+  colorPrecision: number;
+  pathPrecision: number;
+  lineThreshold: number;
+  pathSmoothing: 'high' | 'balanced' | 'minimal';
+  gradientOptimization: boolean;
+}
+
+export interface ColorLayer {
+  color: string;
+  mask: ImageData;
+  paths: string[];
 } 

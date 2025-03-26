@@ -38,4 +38,18 @@ coverage/
 # Cache
 .cache/
 .temp/
-.tmp/ 
+.tmp/
+
+# 依赖
+.pnp
+.pnp.js
+
+# 测试
+coverage
+
+# 生产构建
+dist
+build
+
+# 系统文件
+Thumbs.db 
