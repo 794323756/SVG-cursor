@@ -1,62 +1,32 @@
 declare module 'opencv.js' {
-  export interface Mat {
-    data32F: Float32Array;
-    data32S: Int32Array;
+  export class Mat {
+    constructor(rows: number, cols: number, type: number);
+    constructor(data: Uint8ClampedArray, rows: number, cols: number, type: number);
+    delete(): void;
+    data: Uint8ClampedArray;
     rows: number;
-    delete(): void;
+    cols: number;
+    type: number;
+    reshape(channels: number, rows: number): Mat;
+    row(i: number): Mat;
   }
 
-  export interface MatVector {
-    size(): number;
-    get(index: number): Mat;
-    delete(): void;
-  }
+  export function cvtColor(src: Mat, dst: Mat, code: number): void;
+  export function kmeans(data: Mat, K: number, bestLabels: Mat, criteria: TermCriteria, attempts: number, flags: number, centers: Mat): void;
 
-  export interface TermCriteria {
+  export class TermCriteria {
+    constructor(type: number, maxCount: number, epsilon: number);
     type: number;
     maxCount: number;
     epsilon: number;
   }
 
-  export interface Scalar {
-    data: number[];
-  }
-
-  export function matFromImageData(imageData: ImageData): Mat;
-  export function kmeans(
-    data: Mat,
-    k: number,
-    labels: Mat,
-    criteria: TermCriteria,
-    attempts: number,
-    flags: number,
-    centers: Mat
-  ): void;
-  export function inRange(
-    src: Mat,
-    lowerb: Scalar,
-    upperb: Scalar,
-    dst: Mat
-  ): void;
-  export function findContours(
-    image: Mat,
-    contours: MatVector,
-    hierarchy: Mat,
-    mode: number,
-    method: number
-  ): void;
-  export function arcLength(curve: Mat, closed: boolean): number;
-  export function approxPolyDP(
-    curve: Mat,
-    approxCurve: Mat,
-    epsilon: number,
-    closed: boolean
-  ): void;
-
-  export const CV_32F: number;
-  export const RETR_EXTERNAL: number;
-  export const CHAIN_APPROX_SIMPLE: number;
+  export const COLOR_RGBA2Lab: number;
+  export const COLOR_Lab2RGB: number;
   export const TERM_CRITERIA_EPS: number;
-  export const TERM_CRITERIA_COUNT: number;
+  export const TERM_CRITERIA_MAX_ITER: number;
   export const KMEANS_RANDOM_CENTERS: number;
+  export const CV_8UC4: number;
+  export const CV_8UC3: number;
+  export const CV_32F: number;
 } 
