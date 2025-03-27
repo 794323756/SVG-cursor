@@ -17,7 +17,6 @@
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
-    "@vectormage/image-tracer": "^1.0.0",
     "comlink": "^4.4.1",
     "d3-color": "^3.1.0",
     "file-saver": "^2.0.5",
